@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Custom Format Builder — Manuscript Formatter</title>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 820px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #555;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* ── section cards ── */
+        .section-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px;
+            cursor: pointer;
+            background: #f8fafc;
+            border-bottom: 1px solid #e5e7eb;
+            user-select: none;
+        }
+
+        .section-header:hover { background: #eff6ff; }
+
+        .section-title {
+            font-weight: bold;
+            color: #1a3a6b;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-tag {
+            font-size: 11px;
+            font-weight: normal;
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 2px 8px;
+            border-radius: 99px;
+        }
+
+        .toggle-icon {
+            font-size: 18px;
+            color: #6b7280;
+            transition: transform 0.2s;
+        }
+
+        .section-body {
+            display: none;
+            padding: 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .section-body.open { display: block; }
+
+        /* ── form grid ── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #374151;
+        }
+
+        .form-group input[type="number"],
+        .form-group input[type="text"],
+        .form-group select {
+            padding: 7px 9px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #fafafa;
+            width: 100%;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #2563eb;
+            outline: none;
+            background: white;
+        }
+
+        /* checkboxes row */
+        .checks-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .checks-row label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #374151;
+            cursor: pointer;
+        }
+
+        .checks-row input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+            accent-color: #2563eb;
+        }
+
+        /* ── upload + submit ── */
+        .submit-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+            padding: 24px 20px;
+            margin-top: 10px;
+        }
+
+        .submit-card label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .submit-card input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border: 1.5px dashed #93c5fd;
+            border-radius: 8px;
+            background: #f0f9ff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 11px;
+            border: none;
+            border-radius: 7px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-primary { background: #0066ff; color: white; }
+        .btn-primary:hover { background: #004ecc; }
+
+        .btn-secondary { background: #e5e7eb; color: #374151; }
+        .btn-secondary:hover { background: #d1d5db; }
+
+        /* ── back link ── */
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        /* ── JSON preview ── */
+        #json-preview-box {
+            display: none;
+            background: #1e293b;
+            color: #7dd3fc;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 16px;
+        }
+
+        /* ── error ── */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .alert-error { background: #fee2e2; color: #b91c1c; border-left: 4px solid #ef4444; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <a href="/" class="back-link">← Back to Formatter</a>
+
+    <h1>Custom Format Builder</h1>
+    <p class="subtitle">Set your own typography for each section — the AI will detect them automatically and apply your style.</p>
+
+    {% if error %}
+    <div class="alert alert-error">⚠️ {{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/format/custom/" enctype="multipart/form-data" id="custom-form">
+        {% csrf_token %}
+
+        <!-- hidden field carries the final JSON -->
+        <input type="hidden" name="custom_template" id="custom_template_json">
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- SECTION CARDS                                                    -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+
+        <!-- TITLE -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Title <span class="section-tag">First paragraph</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body open">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="title_size" value="18" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="title_align">
+                            <option value="center" selected>Center</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="title_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="title_bold" checked> Bold</label>
+                    <label><input type="checkbox" id="title_italic"> Italic</label>
+                    <label><input type="checkbox" id="title_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- AUTHORS -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Authors <span class="section-tag">Author names line</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="authors_size" value="12" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="authors_align">
+                            <option value="center" selected>Center</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="authors_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="authors_bold"> Bold</label>
+                    <label><input type="checkbox" id="authors_italic" checked> Italic</label>
+                    <label><input type="checkbox" id="authors_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABSTRACT HEADING -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Abstract Heading <span class="section-tag">The word "Abstract"</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="abstract_heading_size" value="12" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="abstract_heading_align">
+                            <option value="left" selected>Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="abstract_heading_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="abstract_heading_bold" checked> Bold</label>
+                    <label><input type="checkbox" id="abstract_heading_italic"> Italic</label>
+                    <label><input type="checkbox" id="abstract_heading_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABSTRACT TEXT -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Abstract Text <span class="section-tag">Abstract body content</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="abstract_text_size" value="12" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="abstract_text_align">
+                            <option value="justify" selected>Justify</option>
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="abstract_text_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="abstract_text_bold"> Bold</label>
+                    <label><input type="checkbox" id="abstract_text_italic" checked> Italic</label>
+                    <label><input type="checkbox" id="abstract_text_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- KEYWORDS -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Keywords Heading <span class="section-tag">The word "Keywords"</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="keywords_heading_size" value="12" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="keywords_heading_align">
+                            <option value="left" selected>Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="keywords_heading_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="keywords_heading_bold" checked> Bold</label>
+                    <label><input type="checkbox" id="keywords_heading_italic"> Italic</label>
+                    <label><input type="checkbox" id="keywords_heading_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- KEYWORDS TEXT -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Keywords Text <span class="section-tag">Keyword list content</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="keywords_text_size" value="12" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="keywords_text_align">
+                            <option value="left" selected>Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="keywords_text_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="keywords_text_bold"> Bold</label>
+                    <label><input type="checkbox" id="keywords_text_italic" checked> Italic</label>
+                    <label><input type="checkbox" id="keywords_text_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION HEADING -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Section Heading <span class="section-tag">I. Introduction, II. Methods…</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="heading_size" value="13" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="heading_align">
+                            <option value="left" selected>Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="heading_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="heading_bold" checked> Bold</label>
+                    <label><input type="checkbox" id="heading_italic"> Italic</label>
+                    <label><input type="checkbox" id="heading_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUBHEADING -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Subheading <span class="section-tag">1.1, A.1 level headings</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="subheading_size" value="12" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="subheading_align">
+                            <option value="left" selected>Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="subheading_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="subheading_bold" checked> Bold</label>
+                    <label><input type="checkbox" id="subheading_italic" checked> Italic</label>
+                    <label><input type="checkbox" id="subheading_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- BODY -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Body Text <span class="section-tag">Main paragraph content</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="body_size" value="12" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="body_align">
+                            <option value="justify" selected>Justify</option>
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="body_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="body_bold"> Bold</label>
+                    <label><input type="checkbox" id="body_italic"> Italic</label>
+                    <label><input type="checkbox" id="body_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- REFERENCES HEADING -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">References Heading <span class="section-tag">The word "References"</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="references_heading_size" value="12" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="references_heading_align">
+                            <option value="left" selected>Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="references_heading_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="references_heading_bold" checked> Bold</label>
+                    <label><input type="checkbox" id="references_heading_italic"> Italic</label>
+                    <label><input type="checkbox" id="references_heading_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- REFERENCES ITEM -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">References Item <span class="section-tag">Individual reference entries</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="references_item_size" value="11" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="references_item_align">
+                            <option value="left" selected>Left</option>
+                            <option value="justify">Justify</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="references_item_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="references_item_bold"> Bold</label>
+                    <label><input type="checkbox" id="references_item_italic"> Italic</label>
+                    <label><input type="checkbox" id="references_item_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- FIGURE CAPTION -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Figure Caption <span class="section-tag">Fig. 1, Figure 2…</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="figure_caption_size" value="10" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="figure_caption_align">
+                            <option value="center" selected>Center</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="figure_caption_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="figure_caption_bold"> Bold</label>
+                    <label><input type="checkbox" id="figure_caption_italic" checked> Italic</label>
+                    <label><input type="checkbox" id="figure_caption_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLE CAPTION -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Table Caption <span class="section-tag">Table 1, Table 2…</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="table_caption_size" value="10" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="table_caption_align">
+                            <option value="center" selected>Center</option>
+                            <option value="left">Left</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="table_caption_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="table_caption_bold" checked> Bold</label>
+                    <label><input type="checkbox" id="table_caption_italic"> Italic</label>
+                    <label><input type="checkbox" id="table_caption_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACKNOWLEDGEMENTS -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Acknowledgements <span class="section-tag">Acknowledgements section</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="acknowledgements_size" value="12" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="acknowledgements_align">
+                            <option value="left" selected>Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="acknowledgements_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="acknowledgements_bold" checked> Bold</label>
+                    <label><input type="checkbox" id="acknowledgements_italic"> Italic</label>
+                    <label><input type="checkbox" id="acknowledgements_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- APPENDIX -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggle(this)">
+                <div class="section-title">Appendix <span class="section-tag">Appendix / Supplementary</span></div>
+                <span class="toggle-icon">＋</span>
+            </div>
+            <div class="section-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Font Size (pt)</label>
+                        <input type="number" id="appendix_size" value="12" min="6" max="72" step="0.5">
+                    </div>
+                    <div class="form-group">
+                        <label>Alignment</label>
+                        <select id="appendix_align">
+                            <option value="left" selected>Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                            <option value="justify">Justify</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Family</label>
+                        <select id="appendix_font">
+                            <option value="Times New Roman" selected>Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Calibri">Calibri</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Garamond">Garamond</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checks-row" style="margin-top:14px;">
+                    <label><input type="checkbox" id="appendix_bold" checked> Bold</label>
+                    <label><input type="checkbox" id="appendix_italic"> Italic</label>
+                    <label><input type="checkbox" id="appendix_caps"> ALL CAPS</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <!-- UPLOAD + SUBMIT                                                  -->
+        <!-- ════════════════════════════════════════════════════════════════ -->
+        <div class="submit-card">
+            <label>Upload Manuscript (.docx)</label>
+            <input type="file" name="manuscript" accept=".docx" required>
+
+            <div id="json-preview-box"></div>
+
+            <div class="btn-row">
+                <button type="button" class="btn btn-secondary" onclick="previewJSON()">
+                    👁 Preview JSON
+                </button>
+                <button type="submit" class="btn btn-primary" onclick="return buildAndSubmit()">
+                    ✨ Format &amp; Download
+                </button>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+<script>
+    // ── Section accordion toggle ──────────────────────────────────────────
+    function toggle(header) {
+        const body = header.nextElementSibling;
+        const icon = header.querySelector('.toggle-icon');
+        const isOpen = body.classList.toggle('open');
+        icon.textContent = isOpen ? '－' : '＋';
+    }
+
+    // ── Collect all field values into a template object ───────────────────
+    const SECTIONS = [
+        'title', 'authors',
+        'abstract_heading', 'abstract_text',
+        'keywords_heading', 'keywords_text',
+        'heading', 'subheading', 'body',
+        'references_heading', 'references_item',
+        'figure_caption', 'table_caption',
+        'acknowledgements', 'appendix'
+    ];
+
+    function buildTemplate() {
+        const tpl = {};
+        SECTIONS.forEach(sec => {
+            tpl[sec] = {
+                size:     parseFloat(document.getElementById(sec + '_size').value),
+                align:    document.getElementById(sec + '_align').value,
+                font:     document.getElementById(sec + '_font').value,
+                bold:     document.getElementById(sec + '_bold').checked,
+                italic:   document.getElementById(sec + '_italic').checked,
+                all_caps: document.getElementById(sec + '_caps').checked,
+            };
+        });
+        return tpl;
+    }
+
+    function previewJSON() {
+        const box = document.getElementById('json-preview-box');
+        box.style.display = 'block';
+        box.textContent = JSON.stringify(buildTemplate(), null, 2);
+    }
+
+    function buildAndSubmit() {
+        document.getElementById('custom_template_json').value =
+            JSON.stringify(buildTemplate());
+        return true;   // allow form to submit
+    }
+</script>
+
+</body>
+</html>

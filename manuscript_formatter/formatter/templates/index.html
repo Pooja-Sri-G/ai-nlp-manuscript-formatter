@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>AI Manuscript Formatter</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 60px auto;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+        }
+
+        .subtitle {
+            color: #555;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+
+        .card label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        .card input,
+        .card select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+
+        .card button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 10px;
+            background: #0066ff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .card button:hover {
+            background: #004ecc;
+        }
+
+        .template-hint {
+            font-size: 12px;
+            color: #777;
+            margin-top: 5px;
+            min-height: 16px;
+        }
+
+        .output {
+            margin-top: 25px;
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .output h3 {
+            margin-top: 0;
+            color: #2e7d32;
+        }
+
+        .download {
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: #2e7d32;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .download:hover {
+            background: #1b5e20;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="container">
+        <h1>AI Manuscript Formatter</h1>
+        <p class="subtitle">
+            Convert raw DOCX files into publication-ready manuscripts
+        </p>
+
+        <form class="card" action="/format/" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <label>Upload Manuscript (.docx)</label>
+            <input type="file" name="manuscript" accept=".docx" required>
+
+            <label>Select Document Style</label>
+            <select name="template" onchange="updateHint(this)">
+                <option value="ieee">IEEE — Engineering &amp; Technology Journals</option>
+                <option value="apa">APA — Social Sciences &amp; Psychology</option>
+                <option value="mla">MLA — Humanities &amp; Literature</option>
+                <option value="custom">Custom — Define Your Own Format</option>
+            </select>
+            <p class="template-hint" id="template-hint">10pt Times New Roman, justified body, ALL CAPS headings.</p>
+
+            <button type="submit">Format and Download Document</button>
+        </form>
+    </div>
+
+    <script>
+        const hints = {
+            ieee: "10pt Times New Roman, justified body, ALL CAPS headings.",
+            apa: "12pt Times New Roman, centered headings. APA 7th Edition.",
+            mla: "12pt Times New Roman, left-aligned headings. MLA 9th Edition."
+        };
+
+        function updateHint(sel) {
+            if (sel.value === 'custom') {
+                window.location.href = '/format/custom/';
+                return;
+            }
+            document.getElementById('template-hint').textContent = hints[sel.value] || '';
+        }
+    </script>
+</body>
+
+</html>
