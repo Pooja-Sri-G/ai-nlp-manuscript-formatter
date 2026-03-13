@@ -1,4 +1,4 @@
-# AI Manuscript Formatter
+# AI-powered Manuscript Formatter
 
 An intelligent Django web application that uses **NLP and AI** to automatically detect sections in academic manuscripts and reformat them to publication-ready standards (IEEE, APA, MLA, or your own custom style).
 
